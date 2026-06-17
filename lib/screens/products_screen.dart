@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import '../services/api_service.dart';
 import '../models/product.dart';
 import '../models/category.dart';
@@ -476,10 +477,13 @@ class _CardImagePlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Container(
-      height: 150,
-      color: colors.gray100,
-      child: Center(child: CircularProgressIndicator(color: colors.primary, strokeWidth: 2)),
+    return Shimmer.fromColors(
+      baseColor: colors.gray100,
+      highlightColor: colors.surface,
+      child: Container(
+        height: 150,
+        color: Colors.white,
+      ),
     );
   }
 }

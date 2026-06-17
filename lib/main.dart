@@ -130,7 +130,10 @@ class MainScaffold extends StatefulWidget {
 class MainScaffoldState extends State<MainScaffold> {
   int selectedIndex = 0;
 
-  void navigateTo(int index) => setState(() => selectedIndex = index);
+  void navigateTo(int index) {
+    HapticFeedback.selectionClick();
+    setState(() => selectedIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {

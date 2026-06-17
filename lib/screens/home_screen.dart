@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import '../utils/app_colors.dart';
 import '../main.dart'; // for themeNotifier
 import '../widgets/ai_assistant_fab.dart';
@@ -204,10 +205,13 @@ class _ImagePlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Container(
-      height: 240,
-      color: colors.primaryLight,
-      child: Center(child: CircularProgressIndicator(color: colors.primary)),
+    return Shimmer.fromColors(
+      baseColor: colors.gray100,
+      highlightColor: colors.surface,
+      child: Container(
+        height: 240,
+        color: Colors.white,
+      ),
     );
   }
 }
