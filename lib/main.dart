@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/home_screen.dart';
 import 'screens/products_screen.dart';
+import 'screens/about_screen.dart';
 import 'screens/contact_screen.dart';
 import 'utils/app_colors.dart';
+import 'utils/theme_notifier.dart';
+
+import '../widgets/connectivity_banner.dart';
+
+// Create a global singleton instance of ThemeNotifier
+final themeNotifier = ThemeNotifier();
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const HealixMobileApp());
 }
 
@@ -14,38 +22,49 @@ class HealixMobileApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Healix Healthcare',
-      debugShowCheckedModeBanner: false,
-      theme: _buildTheme(),
-      home: const MainScaffold(),
+    return ListenableBuilder(
+      listenable: themeNotifier,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Healix Healthcare',
+          debugShowCheckedModeBanner: false,
+          themeMode: themeNotifier.themeMode,
+          theme: _buildTheme(AppColors.light, Brightness.light),
+          darkTheme: _buildTheme(AppColors.dark, Brightness.dark),
+          home: const ConnectivityBanner(child: MainScaffold()),
+        );
+      },
     );
   }
 
-  /// All theme configuration in one place — references AppColors, never raw Color values.
-  static ThemeData _buildTheme() {
+  static ThemeData _buildTheme(AppColors colors, Brightness brightness) {
     return ThemeData(
       useMaterial3: true,
       fontFamily: 'Inter',
+      brightness: brightness,
+      extensions: [colors],
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
-        primary: AppColors.primary,
+        seedColor: colors.primary,
+        brightness: brightness,
+        primary: colors.primary,
         onPrimary: Colors.white,
-        surface: AppColors.background,
-        onSurface: AppColors.textMain,
+        surface: colors.background,
+        onSurface: colors.textMain,
       ),
-      scaffoldBackgroundColor: AppColors.background,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textMain,
+      scaffoldBackgroundColor: colors.background,
+      appBarTheme: AppBarTheme(
+        backgroundColor: colors.background,
+        foregroundColor: colors.textMain,
         elevation: 0,
         scrolledUnderElevation: 1,
-        shadowColor: AppColors.border,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        shadowColor: colors.border,
+        systemOverlayStyle: brightness == Brightness.light
+            ? SystemUiOverlayStyle.dark
+            : SystemUiOverlayStyle.light,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: colors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -55,8 +74,8 @@ class HealixMobileApp extends StatelessWidget {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary),
+          foregroundColor: colors.primary,
+          side: BorderSide(color: colors.primary),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
@@ -65,35 +84,35 @@ class HealixMobileApp extends StatelessWidget {
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: colors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: colors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: colors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: BorderSide(color: colors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
+          borderSide: BorderSide(color: colors.error, width: 2),
         ),
         filled: true,
-        fillColor: AppColors.background,
-        hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
+        fillColor: colors.background,
+        hintStyle: TextStyle(color: colors.textMuted, fontSize: 14),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.background,
+        color: colors.background,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: colors.border),
         ),
       ),
     );
@@ -115,12 +134,12 @@ class MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // IndexedStack keeps all screens alive — no re-fetch when switching tabs
       body: IndexedStack(
         index: selectedIndex,
         children: [
           HomeScreen(onNavigate: navigateTo),
           const ProductsScreen(),
+          const AboutScreen(),
           const ContactScreen(),
         ],
       ),
@@ -132,7 +151,6 @@ class MainScaffoldState extends State<MainScaffold> {
   }
 }
 
-/// Extracted as its own widget so it rebuilds independently of the body.
 class _BottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -141,16 +159,17 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: colors.border)),
       ),
       child: BottomNavigationBar(
         currentIndex: currentIndex,
         onTap: onTap,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textMuted,
-        backgroundColor: AppColors.background,
+        selectedItemColor: colors.primary,
+        unselectedItemColor: colors.textMuted,
+        backgroundColor: colors.background,
         elevation: 0,
         type: BottomNavigationBarType.fixed,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
@@ -165,6 +184,11 @@ class _BottomNav extends StatelessWidget {
             icon: Icon(Icons.medical_services_outlined),
             activeIcon: Icon(Icons.medical_services),
             label: 'Products',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.info_outline),
+            activeIcon: Icon(Icons.info),
+            label: 'About',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.mail_outline_rounded),

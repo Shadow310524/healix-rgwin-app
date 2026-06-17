@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../utils/app_colors.dart';
 
@@ -21,7 +22,6 @@ class _ContactScreenState extends State<ContactScreen> {
   void initState() {
     super.initState();
     if (widget.productName != null) {
-      // Pre-fill message when opened from a product page
       _messageController.text =
           'I am interested in ${widget.productName}. Please provide more details.';
     }
@@ -48,7 +48,7 @@ class _ContactScreenState extends State<ContactScreen> {
       if (success) {
         _showSnack(
           'Thank you for reaching out. We will get back to you soon!',
-          AppColors.success,
+          context.colors.success,
           Icons.check_circle_outline,
         );
         _nameController.clear();
@@ -56,11 +56,11 @@ class _ContactScreenState extends State<ContactScreen> {
         _messageController.clear();
         if (widget.productName != null) Navigator.pop(context);
       } else {
-        _showSnack('Failed to send message. Please try again.', AppColors.error, null);
+        _showSnack('Failed to send message. Please try again.', context.colors.error, null);
       }
     } catch (_) {
       if (!mounted) return;
-      _showSnack('Failed to send message. Please try again.', AppColors.error, null);
+      _showSnack('Failed to send message. Please try again.', context.colors.error, null);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -84,16 +84,20 @@ class _ContactScreenState extends State<ContactScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
+      appBar: widget.productName != null ? AppBar(
+        title: const Text('Enquire Now'),
+      ) : null,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _ContactHeader(),
-              const SizedBox(height: 32),
+              if (widget.productName == null) const _ContactHeader(),
+              if (widget.productName == null) const SizedBox(height: 32),
               const _ContactInfoSection(),
               const SizedBox(height: 40),
               _ContactForm(
@@ -120,23 +124,24 @@ class _ContactHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final colors = context.colors;
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         Text(
           'Contact Us',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: AppColors.textMain,
+            color: colors.textMain,
             letterSpacing: -0.5,
           ),
         ),
-        SizedBox(height: 4),
+        const SizedBox(height: 4),
         Text(
           "Have questions? We're here to help.",
-          style: TextStyle(fontSize: 15, color: AppColors.textMuted),
+          style: TextStyle(fontSize: 15, color: colors.textMuted),
         ),
       ],
     );
@@ -149,20 +154,21 @@ class _ContactInfoSection extends StatelessWidget {
   const _ContactInfoSection();
 
   static const _contacts = [
-    (Icons.mail_outline_rounded, 'Email Address', 'rgwinhealthcare@gmail.com'),
-    (Icons.phone_outlined, 'Phone Number', '+91 8248703790'),
+    (Icons.mail_outline_rounded, 'Email Address', 'rgwinhealthcare@gmail.com', 'mailto:rgwinhealthcare@gmail.com'),
+    (Icons.phone_outlined, 'Phone Number', '+91 8248703790', 'tel:+918248703790'),
     (Icons.location_on_outlined, 'Office Address',
-        'RG Win Health Care\n431, Bannerghatta Main Road,\nHulimavu, Bangalore-560072'),
+        'RG Win Health Care\n431, Bannerghatta Main Road,\nHulimavu, Bangalore-560072', 'https://maps.google.com/?q=RG+Win+Health+Care,Bangalore'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Get In Touch',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textMain),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colors.textMain),
         ),
         const SizedBox(height: 20),
         for (int i = 0; i < _contacts.length; i++) ...[
@@ -171,6 +177,7 @@ class _ContactInfoSection extends StatelessWidget {
             icon: _contacts[i].$1,
             title: _contacts[i].$2,
             value: _contacts[i].$3,
+            url: _contacts[i].$4,
           ),
         ],
       ],
@@ -182,32 +189,46 @@ class _ContactInfoRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String value;
-  const _ContactInfoRow({required this.icon, required this.title, required this.value});
+  final String url;
+  const _ContactInfoRow({required this.icon, required this.title, required this.value, required this.url});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: const BoxDecoration(color: AppColors.primaryLight, shape: BoxShape.circle),
-          child: Icon(icon, color: AppColors.primary, size: 22),
+    final colors = context.colors;
+    return InkWell(
+      onTap: () async {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: colors.primaryLight, shape: BoxShape.circle),
+              child: Icon(icon, color: colors.primary, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: colors.textMain)),
+                  const SizedBox(height: 2),
+                  Text(value, style: TextStyle(fontSize: 14, color: colors.textMuted, height: 1.4)),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textMain)),
-              const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontSize: 14, color: AppColors.textMuted, height: 1.4)),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -233,12 +254,13 @@ class _ContactForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: colors.background,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: colors.border),
         boxShadow: const [
           BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 2)),
         ],
@@ -321,18 +343,20 @@ class _FormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textMain),
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: colors.textMain),
         ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          style: TextStyle(color: colors.textMain),
           decoration: InputDecoration(hintText: hint),
           validator: validator,
         ),

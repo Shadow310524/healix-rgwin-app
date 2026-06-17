@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // for HapticFeedback
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/product.dart';
 import '../utils/app_colors.dart';
 import 'contact_screen.dart';
@@ -12,12 +14,13 @@ class ProductDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     // Parse once at build time — not repeated on every rebuild
     final benefits = _parseList(product.benefits);
     final ingredients = _parseList(product.ingredients);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: Stack(
         children: [
           CustomScrollView(
@@ -67,11 +70,12 @@ class _ProductAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
-      backgroundColor: AppColors.background,
-      surfaceTintColor: AppColors.background,
+      backgroundColor: colors.background,
+      surfaceTintColor: colors.background,
       leading: Padding(
         padding: const EdgeInsets.all(8),
         child: ClipOval(
@@ -87,19 +91,42 @@ class _ProductAppBar extends StatelessWidget {
           ),
         ),
       ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: ColoredBox(
+                color: const Color(0x4D000000),
+                child: IconButton(
+                  icon: const Icon(Icons.share, color: Colors.white, size: 20),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    // ignore: deprecated_member_use
+                    Share.share(
+                      'Check out ${product.name} from Healix Healthcare!\n\nhttps://healix-rgwin.onrender.com/products/${product.id}',
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Hero(
           tag: 'product-${product.id}',
           child: CachedNetworkImage(
             imageUrl: product.imageUrl,
             fit: BoxFit.cover,
-            placeholder: (_, __) => const ColoredBox(
-              color: AppColors.gray100,
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            placeholder: (_, __) => ColoredBox(
+              color: colors.gray100,
+              child: Center(child: CircularProgressIndicator(color: colors.primary)),
             ),
-            errorWidget: (_, __, ___) => const ColoredBox(
-              color: AppColors.gray100,
-              child: Icon(Icons.broken_image_outlined, color: AppColors.textMuted, size: 64),
+            errorWidget: (_, __, ___) => ColoredBox(
+              color: colors.gray100,
+              child: Icon(Icons.broken_image_outlined, color: colors.textMuted, size: 64),
             ),
           ),
         ),
@@ -116,16 +143,17 @@ class _CategoryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.all(Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: colors.primaryLight,
+        borderRadius: const BorderRadius.all(Radius.circular(20)),
       ),
       child: Text(
         (name ?? 'Uncategorized').toUpperCase(),
-        style: const TextStyle(
-          color: AppColors.primary,
+        style: TextStyle(
+          color: colors.primary,
           fontWeight: FontWeight.w600,
           fontSize: 12,
           letterSpacing: 0.8,
@@ -141,12 +169,13 @@ class _ProductTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Text(
       name,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 28,
         fontWeight: FontWeight.bold,
-        color: AppColors.textMain,
+        color: colors.textMain,
         letterSpacing: -0.5,
         height: 1.2,
       ),
@@ -161,13 +190,14 @@ class _PriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
         Text(
           price,
-          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.primary),
+          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: colors.primary),
         ),
         if (mrp != null && mrp!.isNotEmpty) ...[
           const SizedBox(width: 10),
@@ -192,9 +222,10 @@ class _Description extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Text(
       text,
-      style: const TextStyle(fontSize: 16, color: AppColors.textMuted, height: 1.6),
+      style: TextStyle(fontSize: 16, color: colors.textMuted, height: 1.6),
     );
   }
 }
@@ -221,19 +252,20 @@ class _TrustBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Row(
       children: [
         Container(
           width: 40,
           height: 40,
-          decoration: const BoxDecoration(color: AppColors.primaryLight, shape: BoxShape.circle),
-          child: Icon(icon, color: AppColors.primary, size: 20),
+          decoration: BoxDecoration(color: colors.primaryLight, shape: BoxShape.circle),
+          child: Icon(icon, color: colors.primary, size: 20),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textMain),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: colors.textMain),
           ),
         ),
       ],
@@ -247,11 +279,12 @@ class _BenefitsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Key Benefits',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textMain)),
+        Text('Key Benefits',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: colors.textMain)),
         const SizedBox(height: 10),
         ...benefits.map(
           (b) => Padding(
@@ -259,13 +292,13 @@ class _BenefitsList extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(top: 7),
-                  child: CircleAvatar(radius: 3, backgroundColor: AppColors.textMuted),
+                Padding(
+                  padding: const EdgeInsets.only(top: 7),
+                  child: CircleAvatar(radius: 3, backgroundColor: colors.textMuted),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(b, style: const TextStyle(fontSize: 15, color: AppColors.textMuted, height: 1.4)),
+                  child: Text(b, style: TextStyle(fontSize: 15, color: colors.textMuted, height: 1.4)),
                 ),
               ],
             ),
@@ -283,11 +316,12 @@ class _IngredientChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Active Ingredients',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textMain)),
+        Text('Active Ingredients',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: colors.textMain)),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
@@ -295,11 +329,11 @@ class _IngredientChips extends StatelessWidget {
           children: ingredients
               .map((ing) => Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: const BoxDecoration(
-                      color: AppColors.gray100,
-                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                    decoration: BoxDecoration(
+                      color: colors.gray100,
+                      borderRadius: const BorderRadius.all(Radius.circular(20)),
                     ),
-                    child: Text(ing, style: const TextStyle(fontSize: 13, color: AppColors.gray700)),
+                    child: Text(ing, style: TextStyle(fontSize: 13, color: colors.gray700)),
                   ))
               .toList(),
         ),
@@ -317,16 +351,17 @@ class _EnquireButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: Container(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          border: Border(top: BorderSide(color: AppColors.border)),
-          boxShadow: [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, -4))],
+        decoration: BoxDecoration(
+          color: colors.background,
+          border: Border(top: BorderSide(color: colors.border)),
+          boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, -4))],
         ),
         child: ElevatedButton.icon(
           icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
@@ -334,10 +369,18 @@ class _EnquireButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => ContactScreen(productName: product.name)),
-          ),
+          onPressed: () {
+            HapticFeedback.heavyImpact();
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) => ContactScreen(productName: product.name),
+                transitionsBuilder: (_, animation, __, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+              ),
+            );
+          },
         ),
       ),
     );
