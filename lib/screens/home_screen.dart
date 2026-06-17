@@ -6,6 +6,8 @@ import '../main.dart'; // for themeNotifier
 import '../widgets/ai_assistant_fab.dart';
 import 'chat_screen.dart';
 
+import 'package:flutter/services.dart';
+
 class HomeScreen extends StatelessWidget {
   final void Function(int index)? onNavigate;
   const HomeScreen({super.key, this.onNavigate});
@@ -34,7 +36,10 @@ class HomeScreen extends StatelessWidget {
                   themeNotifier.themeMode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
                   color: colors.textMain,
                 ),
-                onPressed: () => themeNotifier.toggleTheme(),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  themeNotifier.toggleTheme();
+                },
               ),
               const SizedBox(width: 8),
             ],
