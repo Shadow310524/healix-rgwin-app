@@ -10,7 +10,7 @@ import '../models/category.dart';
 /// - Structured error handling
 class ApiService {
   static const String _baseUrl = 'https://healix-rgwin.onrender.com/api/v1';
-  static const Duration _timeout = Duration(seconds: 20);
+  static const Duration _timeout = Duration(seconds: 60);
   static const Duration _cacheTtl = Duration(minutes: 5);
   static const String _tag = 'ApiService';
 
@@ -50,7 +50,7 @@ class ApiService {
     try {
       final response = await _client
           .get(Uri.parse('$_baseUrl/products/'))
-          .timeout(_timeout, onTimeout: () => throw Exception('Request timed out after ${_timeout.inSeconds}s'));
+          .timeout(_timeout, onTimeout: () => throw Exception('Server is waking up. Please tap Retry in a moment.'));
 
       developer.log('📥 [API] Products status: ${response.statusCode}', name: _tag);
 

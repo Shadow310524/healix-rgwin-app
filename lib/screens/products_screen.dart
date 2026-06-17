@@ -163,10 +163,11 @@ class _ProductsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hPad = MediaQuery.sizeOf(context).width < 360 ? 12.0 : 20.0;
     return ColoredBox(
       color: AppColors.surface,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -374,11 +375,17 @@ class _ProductGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    // Responsive: 1 col on very small, 2 on normal, 3 on tablets
+    final crossAxisCount = w < 340 ? 1 : w < 600 ? 2 : 3;
+    final aspectRatio = w < 340 ? 0.72 : 0.56;
+    final hPad = w < 360 ? 12.0 : 20.0;
+
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.56,
+      padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 24),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: aspectRatio,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),

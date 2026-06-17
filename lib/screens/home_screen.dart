@@ -70,17 +70,23 @@ class _HeroSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    // Responsive font: 28 on tiny phones, 32 on small, 36 on normal+
+    final heroFont = w < 340 ? 26.0 : w < 380 ? 30.0 : 36.0;
+    final bodyFont = w < 340 ? 14.0 : 16.0;
+    final hPad = w < 360 ? 16.0 : 24.0;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
+      padding: EdgeInsets.fromLTRB(hPad, 40, hPad, 40),
       decoration: const BoxDecoration(gradient: AppColors.heroGradient),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Gradient headline — matches web ShaderMask text
-          const Text(
+          Text(
             "Advancing Women's",
             style: TextStyle(
-              fontSize: 36,
+              fontSize: heroFont,
               fontWeight: FontWeight.w900,
               color: AppColors.textMain,
               height: 1.1,
@@ -89,10 +95,10 @@ class _HeroSection extends StatelessWidget {
           ),
           ShaderMask(
             shaderCallback: (bounds) => AppColors.primaryGradient.createShader(bounds),
-            child: const Text(
+            child: Text(
               'Health Innovation',
               style: TextStyle(
-                fontSize: 36,
+                fontSize: heroFont,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
                 height: 1.1,
@@ -101,9 +107,9 @@ class _HeroSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Discover our specialized range of gynecological pharmaceutical products designed for modern healthcare needs.',
-            style: TextStyle(fontSize: 16, color: AppColors.textMuted, height: 1.6),
+            style: TextStyle(fontSize: bodyFont, color: AppColors.textMuted, height: 1.6),
           ),
           const SizedBox(height: 28),
           _HeroCTAs(onNavigate: onNavigate),
@@ -124,13 +130,16 @@ class _HeroCTAs extends StatelessWidget {
         Expanded(
           child: ElevatedButton(
             onPressed: () => onNavigate?.call(1),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('View Products'),
-                SizedBox(width: 6),
-                Icon(Icons.arrow_forward, size: 16),
-              ],
+            child: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('View Products'),
+                  SizedBox(width: 6),
+                  Icon(Icons.arrow_forward, size: 16),
+                ],
+              ),
             ),
           ),
         ),
@@ -138,7 +147,10 @@ class _HeroCTAs extends StatelessWidget {
         Expanded(
           child: OutlinedButton(
             onPressed: () => onNavigate?.call(2),
-            child: const Text('Contact Us'),
+            child: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text('Contact Us'),
+            ),
           ),
         ),
       ],
