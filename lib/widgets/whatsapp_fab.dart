@@ -33,8 +33,22 @@ class _WhatsAppFabState extends State<WhatsAppFab> with SingleTickerProviderStat
 
   Future<void> _openWhatsApp() async {
     final Uri url = Uri.parse('https://wa.me/918248703790?text=Hi,%20I%27d%20like%20to%20know%20more%20about%20Healix%20products');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open WhatsApp. Make sure it is installed.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open WhatsApp. Make sure it is installed.')),
+        );
+      }
     }
   }
 

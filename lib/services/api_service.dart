@@ -1,73 +1,111 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
 import '../models/category.dart';
 
 /// Centralized API service with:
-/// - Persistent http.Client (reuses TCP connections — faster than one-shot gets)
-/// - In-memory cache with 5-minute TTL (avoids re-fetching on tab switches)
+/// - Persistent http.Client (reuses TCP connections)
+/// - In-memory and Disk caching (Offline support)
 /// - Structured error handling
 class ApiService {
   static const String _baseUrl = 'https://healix-rgwin.onrender.com/api/v1';
   static const Duration _timeout = Duration(seconds: 60);
-  static const Duration _cacheTtl = Duration(minutes: 5);
+  static const Duration _cacheTtl = Duration(minutes: 60); // 1 hour TTL for offline cache
   static const String _tag = 'ApiService';
 
-  /// Shared client — keeps connections alive (HTTP keep-alive)
   static final http.Client _client = http.Client();
 
-  // ─── In-memory cache ────────────────────────────────────────────────────────
+  // In-memory caches to avoid hitting disk/parsing repeatedly in same session
+  static List<Product>? _memProducts;
+  static List<Category>? _memCategories;
 
-  static List<Product>? _cachedProducts;
-  static List<Category>? _cachedCategories;
-  static DateTime? _productsCachedAt;
-  static DateTime? _categoriesCachedAt;
-
-  static bool _isFresh(DateTime? cachedAt) {
-    if (cachedAt == null) return false;
+  static Future<bool> _isFresh(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final timestamp = prefs.getInt('${key}_time');
+    if (timestamp == null) return false;
+    final cachedAt = DateTime.fromMillisecondsSinceEpoch(timestamp);
     return DateTime.now().difference(cachedAt) < _cacheTtl;
   }
 
-  /// Clear all caches (call this after a data mutation like adding a product)
-  static void clearCache() {
-    _cachedProducts = null;
-    _cachedCategories = null;
-    _productsCachedAt = null;
-    _categoriesCachedAt = null;
+  static Future<void> _saveToDisk(String key, List<dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, json.encode(data));
+    await prefs.setInt('${key}_time', DateTime.now().millisecondsSinceEpoch);
+  }
+
+  static Future<List<dynamic>?> _loadFromDisk(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final str = prefs.getString(key);
+    if (str != null) {
+      return json.decode(str) as List<dynamic>;
+    }
+    return null;
+  }
+
+  /// Clear all caches
+  static Future<void> clearCache() async {
+    _memProducts = null;
+    _memCategories = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('products');
+    await prefs.remove('products_time');
+    await prefs.remove('categories');
+    await prefs.remove('categories_time');
     developer.log('🗑️ [API] Cache cleared', name: _tag);
   }
 
   // ─── Products ────────────────────────────────────────────────────────────────
 
   static Future<List<Product>> getProducts({bool forceRefresh = false}) async {
-    if (!forceRefresh && _isFresh(_productsCachedAt) && _cachedProducts != null) {
-      developer.log('⚡ [API] Products served from cache (${_cachedProducts!.length} items)', name: _tag);
-      return _cachedProducts!;
+    // 1. Check in-memory cache first
+    if (!forceRefresh && _memProducts != null && await _isFresh('products')) {
+      developer.log('⚡ [API] Products served from MEMORY', name: _tag);
+      return _memProducts!;
     }
 
+    // 2. Check disk cache if not forcing refresh
+    if (!forceRefresh) {
+      final diskData = await _loadFromDisk('products');
+      if (diskData != null && await _isFresh('products')) {
+        developer.log('⚡ [API] Products served from DISK CACHE', name: _tag);
+        _memProducts = diskData.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+        return _memProducts!;
+      }
+    }
+
+    // 3. Fetch from Network
     developer.log('📡 [API] GET $_baseUrl/products/', name: _tag);
     try {
       final response = await _client
           .get(Uri.parse('$_baseUrl/products/'))
-          .timeout(_timeout, onTimeout: () => throw Exception('Server is waking up. Please tap Retry in a moment.'));
-
-      developer.log('📥 [API] Products status: ${response.statusCode}', name: _tag);
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List<dynamic>;
         final products = data.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
-        // Store in cache
-        _cachedProducts = products;
-        _productsCachedAt = DateTime.now();
-        developer.log('✅ [API] Parsed ${products.length} products', name: _tag);
+        
+        // Save to cache
+        _memProducts = products;
+        // The API returns raw JSON which we want to cache, but we can also re-serialize
+        final jsonList = products.map((p) => p.toJson()).toList();
+        await _saveToDisk('products', jsonList);
+        
+        developer.log('✅ [API] Parsed and cached ${products.length} products', name: _tag);
         return products;
       } else {
-        developer.log('❌ [API] Products error ${response.statusCode}', name: _tag);
         throw Exception('Server returned ${response.statusCode}');
       }
     } catch (e, stack) {
-      developer.log('💥 [API] Products exception: $e', name: _tag, error: e, stackTrace: stack);
+      developer.log('💥 [API] Products network exception: $e', name: _tag, error: e, stackTrace: stack);
+      // Fallback: If network fails (e.g. no internet), return stale disk cache if available
+      final staleData = await _loadFromDisk('products');
+      if (staleData != null) {
+        developer.log('⚠️ [API] Network failed, serving STALE DISK CACHE', name: _tag);
+        _memProducts = staleData.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+        return _memProducts!;
+      }
       rethrow;
     }
   }
@@ -75,9 +113,16 @@ class ApiService {
   // ─── Categories ──────────────────────────────────────────────────────────────
 
   static Future<List<Category>> getCategories({bool forceRefresh = false}) async {
-    if (!forceRefresh && _isFresh(_categoriesCachedAt) && _cachedCategories != null) {
-      developer.log('⚡ [API] Categories served from cache (${_cachedCategories!.length} items)', name: _tag);
-      return _cachedCategories!;
+    if (!forceRefresh && _memCategories != null && await _isFresh('categories')) {
+      return _memCategories!;
+    }
+
+    if (!forceRefresh) {
+      final diskData = await _loadFromDisk('categories');
+      if (diskData != null && await _isFresh('categories')) {
+        _memCategories = diskData.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList();
+        return _memCategories!;
+      }
     }
 
     developer.log('📡 [API] GET $_baseUrl/categories/', name: _tag);
@@ -86,20 +131,26 @@ class ApiService {
           .get(Uri.parse('$_baseUrl/categories/'))
           .timeout(_timeout);
 
-      developer.log('📥 [API] Categories status: ${response.statusCode}', name: _tag);
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List<dynamic>;
         final categories = data.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList();
-        _cachedCategories = categories;
-        _categoriesCachedAt = DateTime.now();
-        developer.log('✅ [API] Parsed ${categories.length} categories', name: _tag);
+        
+        _memCategories = categories;
+        final jsonList = categories.map((c) => c.toJson()).toList();
+        await _saveToDisk('categories', jsonList);
+        
+        developer.log('✅ [API] Parsed and cached ${categories.length} categories', name: _tag);
         return categories;
       } else {
         throw Exception('Server returned ${response.statusCode}');
       }
     } catch (e, stack) {
-      developer.log('💥 [API] Categories exception: $e', name: _tag, error: e, stackTrace: stack);
+      developer.log('💥 [API] Categories network exception: $e', name: _tag, error: e, stackTrace: stack);
+      final staleData = await _loadFromDisk('categories');
+      if (staleData != null) {
+        _memCategories = staleData.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList();
+        return _memCategories!;
+      }
       rethrow;
     }
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // for HapticFeedback
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:photo_view/photo_view.dart';
 import '../models/product.dart';
 import '../utils/app_colors.dart';
 import 'contact_screen.dart';
@@ -115,22 +116,67 @@ class _ProductAppBar extends StatelessWidget {
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        background: Hero(
-          tag: 'product-${product.id}',
-          child: CachedNetworkImage(
-            imageUrl: product.imageUrl,
-            fit: BoxFit.cover,
-            placeholder: (_, __) => ColoredBox(
-              color: colors.gray100,
-              child: Center(child: CircularProgressIndicator(color: colors.primary)),
-            ),
-            errorWidget: (_, __, ___) => ColoredBox(
-              color: colors.gray100,
-              child: Icon(Icons.broken_image_outlined, color: colors.textMuted, size: 64),
+        background: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                opaque: false,
+                barrierColor: Colors.black.withAlpha(230),
+                pageBuilder: (BuildContext context, _, __) {
+                  return Scaffold(
+                    backgroundColor: Colors.transparent,
+                    appBar: AppBar(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      iconTheme: const IconThemeData(color: Colors.white),
+                    ),
+                    body: Center(
+                      child: Hero(
+                        tag: 'product-${product.id}',
+                        child: _FullScreenImageViewer(imageUrl: product.imageUrl),
+                      ),
+                    ),
+                  );
+                },
+                transitionsBuilder: (_, animation, __, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+              ),
+            );
+          },
+          child: Hero(
+            tag: 'product-${product.id}',
+            child: CachedNetworkImage(
+              imageUrl: product.imageUrl,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => ColoredBox(
+                color: colors.gray100,
+                child: Center(child: CircularProgressIndicator(color: colors.primary)),
+              ),
+              errorWidget: (_, __, ___) => ColoredBox(
+                color: colors.gray100,
+                child: Icon(Icons.broken_image_outlined, color: colors.textMuted, size: 64),
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FullScreenImageViewer extends StatelessWidget {
+  final String imageUrl;
+  const _FullScreenImageViewer({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return PhotoView(
+      imageProvider: CachedNetworkImageProvider(imageUrl),
+      backgroundDecoration: const BoxDecoration(color: Colors.transparent),
+      minScale: PhotoViewComputedScale.contained,
+      maxScale: PhotoViewComputedScale.covered * 3,
     );
   }
 }

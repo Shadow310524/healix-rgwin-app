@@ -41,6 +41,20 @@ class Product {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'price': price,
+      'mrp': mrp,
+      'image_url': imageUrl,
+      'description': description,
+      'benefits': benefits,
+      'ingredients': ingredients,
+      'category': category?.toJson(),
+    };
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) || (other is Product && other.id == id);

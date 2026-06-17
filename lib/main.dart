@@ -9,6 +9,8 @@ import 'utils/theme_notifier.dart';
 
 import '../widgets/connectivity_banner.dart';
 
+import 'screens/chat_screen.dart';
+
 // Create a global singleton instance of ThemeNotifier
 final themeNotifier = ThemeNotifier();
 
@@ -139,6 +141,7 @@ class MainScaffoldState extends State<MainScaffold> {
         children: [
           HomeScreen(onNavigate: navigateTo),
           const ProductsScreen(),
+          const ChatScreen(),
           const AboutScreen(),
           const ContactScreen(),
         ],
@@ -172,8 +175,8 @@ class _BottomNav extends StatelessWidget {
         backgroundColor: colors.background,
         elevation: 0,
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 10),
+        unselectedLabelStyle: const TextStyle(fontSize: 10),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -184,6 +187,11 @@ class _BottomNav extends StatelessWidget {
             icon: Icon(Icons.medical_services_outlined),
             activeIcon: Icon(Icons.medical_services),
             label: 'Products',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.support_agent_outlined),
+            activeIcon: Icon(Icons.support_agent),
+            label: 'Assistant',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.info_outline),
