@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../utils/app_colors.dart';
 import '../main.dart'; // for themeNotifier
-import '../widgets/whatsapp_fab.dart';
+import '../widgets/ai_assistant_fab.dart';
 
 class HomeScreen extends StatelessWidget {
   final void Function(int index)? onNavigate;
@@ -13,7 +13,7 @@ class HomeScreen extends StatelessWidget {
     final colors = context.colors;
     return Scaffold(
       backgroundColor: colors.background,
-      floatingActionButton: const WhatsAppFab(),
+      floatingActionButton: AiAssistantFab(onTap: () => onNavigate?.call(2)),
       body: CustomScrollView(
         slivers: [
           // Navbar
