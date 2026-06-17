@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../utils/app_colors.dart';
 import '../main.dart'; // for themeNotifier
 import '../widgets/ai_assistant_fab.dart';
+import 'chat_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final void Function(int index)? onNavigate;
@@ -13,7 +14,9 @@ class HomeScreen extends StatelessWidget {
     final colors = context.colors;
     return Scaffold(
       backgroundColor: colors.background,
-      floatingActionButton: AiAssistantFab(onTap: () => onNavigate?.call(2)),
+      floatingActionButton: AiAssistantFab(onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
+      }),
       body: CustomScrollView(
         slivers: [
           // Navbar
@@ -162,7 +165,7 @@ class _HeroCTAs extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: OutlinedButton(
-            onPressed: () => onNavigate?.call(3), // 3 is Contact Us (0 Home, 1 Prod, 2 About, 3 Contact)
+            onPressed: () => onNavigate?.call(2), // 2 is Contact Us (0 Home, 1 Prod, 2 Contact, 3 About)
             child: const FittedBox(
               fit: BoxFit.scaleDown,
               child: Text('Contact Us'),

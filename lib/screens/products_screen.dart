@@ -549,6 +549,20 @@ class _CardFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    
+    // Parse price and mrp for discount badge
+    double? priceValue;
+    double? mrpValue;
+    try {
+      priceValue = double.tryParse(product.price.replaceAll(RegExp(r'[^0-9.]'), ''));
+      mrpValue = double.tryParse(product.mrp?.replaceAll(RegExp(r'[^0-9.]'), '') ?? '');
+    } catch (_) {}
+
+    int? discountPercent;
+    if (priceValue != null && mrpValue != null && mrpValue > priceValue && mrpValue > 0) {
+      discountPercent = ((mrpValue - priceValue) / mrpValue * 100).round();
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
       decoration: BoxDecoration(
@@ -560,18 +574,39 @@ class _CardFooter extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  product.price,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: colors.textMain),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      product.price,
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: colors.textMain),
+                    ),
+                    if (discountPercent != null && discountPercent > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '$discountPercent% OFF',
+                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                        ),
+                      ),
+                    ]
+                  ],
                 ),
                 if (product.mrp != null && product.mrp!.isNotEmpty)
-                  Text(
-                    product.mrp!,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: colors.gray400,
-                      decoration: TextDecoration.lineThrough,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'MRP: ${product.mrp}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: colors.gray400,
+                      ),
                     ),
                   ),
               ],

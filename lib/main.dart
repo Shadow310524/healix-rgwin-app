@@ -9,7 +9,6 @@ import 'utils/theme_notifier.dart';
 
 import '../widgets/connectivity_banner.dart';
 
-import 'screens/chat_screen.dart';
 
 // Create a global singleton instance of ThemeNotifier
 final themeNotifier = ThemeNotifier();
@@ -141,9 +140,8 @@ class MainScaffoldState extends State<MainScaffold> {
         children: [
           HomeScreen(onNavigate: navigateTo),
           const ProductsScreen(),
-          const ChatScreen(),
-          const AboutScreen(),
           const ContactScreen(),
+          const AboutScreen(),
         ],
       ),
       bottomNavigationBar: _BottomNav(
@@ -189,19 +187,14 @@ class _BottomNav extends StatelessWidget {
             label: 'Products',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.support_agent_outlined),
-            activeIcon: Icon(Icons.support_agent),
-            label: 'Assistant',
+            icon: Icon(Icons.mail_outline_rounded),
+            activeIcon: Icon(Icons.mail_rounded),
+            label: 'Contact',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.info_outline),
             activeIcon: Icon(Icons.info),
             label: 'About',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.mail_outline_rounded),
-            activeIcon: Icon(Icons.mail_rounded),
-            label: 'Contact',
           ),
         ],
       ),

@@ -237,27 +237,63 @@ class _PriceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        Text(
-          price,
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: colors.primary),
-        ),
-        if (mrp != null && mrp!.isNotEmpty) ...[
-          const SizedBox(width: 10),
-          Text(
-            mrp!,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF6b7280),
-              decoration: TextDecoration.lineThrough,
+    return Builder(
+      builder: (context) {
+        double? priceValue;
+        double? mrpValue;
+        try {
+          priceValue = double.tryParse(price.replaceAll(RegExp(r'[^0-9.]'), ''));
+          mrpValue = double.tryParse(mrp?.replaceAll(RegExp(r'[^0-9.]'), '') ?? '');
+        } catch (_) {}
+
+        int? discountPercent;
+        if (priceValue != null && mrpValue != null && mrpValue > priceValue && mrpValue > 0) {
+          discountPercent = ((mrpValue - priceValue) / mrpValue * 100).round();
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              price,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: colors.primary,
+              ),
             ),
-          ),
-        ],
-      ],
+            if (mrp != null && mrp!.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  'MRP: $mrp',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: colors.textMuted,
+                  ),
+                ),
+              ),
+            ],
+            if (discountPercent != null && discountPercent > 0) ...[
+              const SizedBox(width: 12),
+              Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '$discountPercent% OFF',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
