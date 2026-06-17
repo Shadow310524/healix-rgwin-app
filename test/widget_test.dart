@@ -12,7 +12,7 @@ import 'package:healix_mobile/main.dart';
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(HealixMobileApp());
+    await tester.pumpWidget(const HealixMobileApp());
 
     // Verify that the title is present in the app.
     expect(find.text('Healix Healthcare'), findsOneWidget);

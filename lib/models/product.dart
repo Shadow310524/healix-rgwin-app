@@ -1,5 +1,7 @@
 import 'category.dart';
 
+/// Immutable data model for a Product.
+/// Implements == and hashCode for safe use in Sets, Maps, and ListView keys.
 class Product {
   final int id;
   final String name;
@@ -11,7 +13,7 @@ class Product {
   final String ingredients;
   final Category? category;
 
-  Product({
+  const Product({
     required this.id,
     required this.name,
     required this.price,
@@ -25,15 +27,27 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Unnamed Product',
-      price: json['price'] ?? '',
-      mrp: json['mrp'],
-      imageUrl: json['image_url'] ?? '',
-      description: json['description'] ?? '',
-      benefits: json['benefits'] ?? '',
-      ingredients: json['ingredients'] ?? '',
-      category: json['category'] != null ? Category.fromJson(json['category']) : null,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      name: (json['name'] as String?) ?? 'Unnamed Product',
+      price: (json['price'] as String?) ?? '',
+      mrp: json['mrp'] as String?,
+      imageUrl: (json['image_url'] as String?) ?? '',
+      description: (json['description'] as String?) ?? '',
+      benefits: (json['benefits'] as String?) ?? '',
+      ingredients: (json['ingredients'] as String?) ?? '',
+      category: json['category'] != null
+          ? Category.fromJson(json['category'] as Map<String, dynamic>)
+          : null,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is Product && other.id == id);
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() => 'Product(id: $id, name: $name)';
 }
