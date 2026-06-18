@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/about_screen.dart';
@@ -32,7 +33,7 @@ class HealixMobileApp extends StatelessWidget {
           themeMode: themeNotifier.themeMode,
           theme: _buildTheme(AppColors.light, Brightness.light),
           darkTheme: _buildTheme(AppColors.dark, Brightness.dark),
-          home: const ConnectivityBanner(child: MainScaffold()),
+          home: const ConnectivityBanner(child: SplashScreen()),
         );
       },
     );

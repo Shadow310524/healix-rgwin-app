@@ -16,10 +16,6 @@ class ProductDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    // Parse once at build time — not repeated on every rebuild
-    final benefits = _parseList(product.benefits);
-    final ingredients = _parseList(product.ingredients);
-
     return Scaffold(
       backgroundColor: colors.background,
       body: Stack(
@@ -43,8 +39,8 @@ class ProductDetailsScreen extends StatelessWidget {
                       const SizedBox(height: 24),
                       const _TrustBadgeRow(),
                       const SizedBox(height: 24),
-                      if (benefits.isNotEmpty) _BenefitsList(benefits: benefits),
-                      if (ingredients.isNotEmpty) _IngredientChips(ingredients: ingredients),
+                      if (product.benefits.isNotEmpty) _BenefitsList(benefits: product.benefits),
+                      if (product.ingredients.isNotEmpty) _IngredientChips(ingredients: product.ingredients),
                       const SizedBox(height: 80), // space for sticky button
                     ],
                   ),
@@ -58,9 +54,6 @@ class ProductDetailsScreen extends StatelessWidget {
     );
   }
 
-  /// Splits a comma-separated string into a trimmed, non-empty list.
-  static List<String> _parseList(String raw) =>
-      raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
 }
 
 // ─── App Bar ─────────────────────────────────────────────────────────────────

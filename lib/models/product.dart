@@ -9,8 +9,8 @@ class Product {
   final String? mrp;
   final String imageUrl;
   final String description;
-  final String benefits;
-  final String ingredients;
+  final List<String> benefits;
+  final List<String> ingredients;
   final Category? category;
 
   const Product({
@@ -33,8 +33,8 @@ class Product {
       mrp: json['mrp'] as String?,
       imageUrl: (json['image_url'] as String?) ?? '',
       description: (json['description'] as String?) ?? '',
-      benefits: (json['benefits'] as String?) ?? '',
-      ingredients: (json['ingredients'] as String?) ?? '',
+      benefits: (json['benefits'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      ingredients: (json['ingredients'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       category: json['category'] != null
           ? Category.fromJson(json['category'] as Map<String, dynamic>)
           : null,
