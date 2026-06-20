@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
@@ -88,7 +90,6 @@ class ApiService {
         
         // Save to cache
         _memProducts = products;
-        // The API returns raw JSON which we want to cache, but we can also re-serialize
         final jsonList = products.map((p) => p.toJson()).toList();
         await _saveToDisk('products', jsonList);
         
@@ -106,7 +107,10 @@ class ApiService {
         _memProducts = staleData.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
         return _memProducts!;
       }
-      rethrow;
+      if (e is SocketException || e is TimeoutException) {
+        throw Exception("No internet connection or server timeout. Please check your network and try again.");
+      }
+      throw Exception("Unable to load products due to a server error. Please try again.");
     }
   }
 
@@ -151,7 +155,10 @@ class ApiService {
         _memCategories = staleData.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList();
         return _memCategories!;
       }
-      rethrow;
+      if (e is SocketException || e is TimeoutException) {
+        throw Exception("No internet connection or server timeout. Please check your network and try again.");
+      }
+      throw Exception("Unable to load categories due to a server error. Please try again.");
     }
   }
 
@@ -169,10 +176,33 @@ class ApiService {
           .timeout(_timeout);
 
       developer.log('📥 [API] Enquiry response: ${response.statusCode}', name: _tag);
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception("Server failed to accept enquiry. Status: ${response.statusCode}");
+      }
     } catch (e, stack) {
       developer.log('💥 [API] Enquiry exception: $e', name: _tag, error: e, stackTrace: stack);
-      rethrow;
+      if (e is SocketException || e is TimeoutException) {
+        throw Exception("No internet connection or server timeout. Please check your network and try again.");
+      }
+      throw Exception("Failed to send message. Please try again.");
+    }
+  }
+
+  // ─── Analytics ────────────────────────────────────────────────────────────────
+
+  /// Increments the view counter for a specific product as a fire-and-forget background analytics request.
+  static Future<void> incrementProductViews(int id) async {
+    developer.log('📡 [API] Incrementing views for product $id', name: _tag);
+    try {
+      final response = await _client
+          .get(Uri.parse('$_baseUrl/products/$id'))
+          .timeout(const Duration(seconds: 10));
+      developer.log('📥 [API] View count incremented for product $id: status ${response.statusCode}', name: _tag);
+    } catch (e) {
+      // Catch silently to avoid disrupting user experience in case of connection failure or latency
+      developer.log('⚠️ [API] Failed to increment views for product $id: $e', name: _tag);
     }
   }
 }

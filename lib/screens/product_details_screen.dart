@@ -6,15 +6,29 @@ import 'package:share_plus/share_plus.dart';
 import 'package:photo_view/photo_view.dart';
 import '../models/product.dart';
 import '../utils/app_colors.dart';
+import '../services/api_service.dart';
 import 'contact_screen.dart';
 
-class ProductDetailsScreen extends StatelessWidget {
+class ProductDetailsScreen extends StatefulWidget {
   final Product product;
 
   const ProductDetailsScreen({super.key, required this.product});
 
   @override
+  State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
+}
+
+class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Fire and forget view increment on backend
+    ApiService.incrementProductViews(widget.product.id);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final product = widget.product;
     final colors = context.colors;
     return Scaffold(
       backgroundColor: colors.background,
@@ -53,7 +67,6 @@ class ProductDetailsScreen extends StatelessWidget {
       ),
     );
   }
-
 }
 
 // ─── App Bar ─────────────────────────────────────────────────────────────────
