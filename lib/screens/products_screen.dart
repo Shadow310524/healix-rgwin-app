@@ -376,66 +376,133 @@ class _ProductGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.sizeOf(context).width;
-    // Responsive: 1 col on very small, 2 on normal, 3 on tablets
-    final crossAxisCount = w < 340 ? 1 : w < 600 ? 2 : 3;
-    final aspectRatio = w < 340 ? 0.72 : 0.56;
-    final hPad = w < 360 ? 12.0 : 20.0;
+    final isMobile = w < 700;
+    final hPad = w < 360 ? 16.0 : 24.0;
 
+    if (isMobile) {
+      return ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 32),
+        itemCount: products.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 24),
+        itemBuilder: (_, i) {
+          return TweenAnimationBuilder<double>(
+            key: ValueKey(products[i].id),
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 400 + (i * 100).clamp(0, 400)),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, 40 * (1 - value)),
+                child: Opacity(
+                  opacity: value,
+                  child: child,
+                ),
+              );
+            },
+            child: RepaintBoundary(
+              child: IntrinsicHeight(
+                child: _ProductCard(product: products[i]),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    // Tablet/Desktop grid
     return GridView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 24),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: aspectRatio,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+      padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 32),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.8,
+        crossAxisSpacing: 24,
+        mainAxisSpacing: 24,
       ),
       itemCount: products.length,
-      itemBuilder: (_, i) => RepaintBoundary(child: _ProductCard(product: products[i])),
+      itemBuilder: (_, i) {
+        return TweenAnimationBuilder<double>(
+          key: ValueKey(products[i].id),
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: Duration(milliseconds: 400 + (i * 100).clamp(0, 400)),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 40 * (1 - value)),
+              child: Opacity(
+                opacity: value,
+                child: child,
+              ),
+            );
+          },
+          child: RepaintBoundary(child: _ProductCard(product: products[i])),
+        );
+      },
     );
   }
 }
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
 
-class _ProductCard extends StatelessWidget {
+class _ProductCard extends StatefulWidget {
   final Product product;
   const _ProductCard({required this.product});
 
   @override
+  State<_ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends State<_ProductCard> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => ProductDetailsScreen(product: product),
-          transitionsBuilder: (_, animation, __, child) {
-            const begin = Offset(0.0, 1.0);
-            const end = Offset.zero;
-            const curve = Curves.easeOutQuart;
-            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-            return SlideTransition(position: animation.drive(tween), child: child);
-          },
-        ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: colors.background,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.border),
-          boxShadow: const [
-            BoxShadow(color: Color(0x0A000000), blurRadius: 6, offset: Offset(0, 2)),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _CardImage(product: product),
-            Expanded(child: _CardBody(product: product)),
-            _CardFooter(product: product),
-          ],
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: () {
+        Future.delayed(const Duration(milliseconds: 60), () {
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (_, __, ___) => ProductDetailsScreen(product: widget.product),
+              transitionsBuilder: (_, animation, __, child) {
+                var tween = Tween(begin: const Offset(0.0, 0.05), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic));
+                return SlideTransition(
+                  position: animation.drive(tween),
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
+            ),
+          );
+        });
+      },
+      child: AnimatedScale(
+        scale: _isPressed ? 0.98 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutQuart,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+            boxShadow: const [
+              BoxShadow(color: Color(0x08000000), blurRadius: 16, offset: Offset(0, 8)),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _CardImage(product: widget.product),
+              _CardBody(product: widget.product),
+              _CardFooter(product: widget.product),
+            ],
+          ),
         ),
       ),
     );
@@ -508,63 +575,77 @@ class _CardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            (product.category?.name ?? 'Uncategorized').toUpperCase(),
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: colors.primary,
-              letterSpacing: 0.8,
+          Container(
+            padding: const EdgeInsets.only(bottom: 2),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Color(0xFF0A2540), width: 2)),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            child: Text(
+              (product.category?.name ?? 'Uncategorized').toUpperCase(),
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0A2540),
+                letterSpacing: 1.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 12),
           Text(
             product.name,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: colors.textMain, height: 1.2),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF0A2540), height: 1.1, letterSpacing: -0.5),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 3),
-          Text(
-            product.description,
-            style: TextStyle(fontSize: 11, color: colors.textMuted, height: 1.3),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          const SizedBox(height: 12),
           if (product.ingredients.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: colors.gray100,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: colors.border),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.science_outlined, size: 10, color: colors.gray700),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      product.ingredients.first,
-                      style: TextStyle(fontSize: 9, color: colors.gray700, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.science_outlined, size: 12, color: Color(0xFF64748B)),
+                    SizedBox(width: 6),
+                    Text(
+                      'ACTIVE COMPOSITION',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                ],
-              ),
+                  child: Text(
+                    product.ingredients.first,
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF1E293B), fontWeight: FontWeight.w600, height: 1.3),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 16),
           ],
         ],
       ),
@@ -578,89 +659,42 @@ class _CardFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    
-    // Parse price and mrp for discount badge
-    double? priceValue;
-    double? mrpValue;
-    try {
-      priceValue = double.tryParse(product.price.replaceAll(RegExp(r'[^0-9.]'), ''));
-      mrpValue = double.tryParse(product.mrp?.replaceAll(RegExp(r'[^0-9.]'), '') ?? '');
-    } catch (_) {}
-
-    int? discountPercent;
-    if (priceValue != null && mrpValue != null && mrpValue > priceValue && mrpValue > 0) {
-      discountPercent = ((mrpValue - priceValue) / mrpValue * 100).round();
-    }
-
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: colors.gray100)),
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0A2540),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
                     Text(
-                      product.price,
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: colors.textMain),
-                    ),
-                    if (discountPercent != null && discountPercent > 0) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '$discountPercent% OFF',
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.green.shade800),
-                        ),
+                      'VIEW CLINICAL PROFILE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        letterSpacing: 1.5,
                       ),
-                    ]
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward, color: Colors.white, size: 14),
                   ],
                 ),
-                if (product.mrp != null && product.mrp!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      'MRP: ${product.mrp}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: colors.gray400,
-                      ),
-                    ),
-                  ),
-              ],
+              ),
             ),
-          ),
-          const _ArrowButton(),
-        ],
-      ),
-    );
-  }
-}
-
-class _ArrowButton extends StatelessWidget {
-  const _ArrowButton();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return DecoratedBox(
-      decoration: BoxDecoration(color: colors.primaryLight, shape: BoxShape.circle),
-      child: SizedBox(
-        width: 32,
-        height: 32,
-        child: Icon(Icons.arrow_forward, color: colors.primary, size: 16),
+          ],
+        ),
       ),
     );
   }
